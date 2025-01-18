@@ -10,6 +10,7 @@ const AddForm = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate()
     const [errorSupport, setErrorSupport] = useState("");
+    const [fileError, setFileError] = useState("");
     const [validationErrors, setValidationErrors] = useState("");
 
     const [values, setValues] = useState({
@@ -30,35 +31,47 @@ const AddForm = () => {
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file && file.type !== "application/pdf") {
-            setValidationErrors("Only PDF files are allowed.");
+            setFileError("Only PDF files are allowed.");
             return;
         } else if (file && file.size > 5 * 1024 * 1024) {
-            setValidationErrors("File size must not exceed 5MB.");
+            setFileError("File size must not exceed 5MB.");
             return
-        } else {
-            setValues({
-                ...values,
-                resumeUrl: file
-            })
         }
+        setFileError("")
+        setValues({
+            ...values,
+            resumeUrl: file
+        })
     }
 
 
     const handleSubmit = async(e) => {
         e.preventDefault();
 
-        !window.chrome ? setErrorSupport("Browser not supported. please use chrome") :setErrorSupport("")
+        if(!window.chrome) {
+            setErrorSupport("Browser not supported. Please use Chrome.")
+            return;
+        }
+        setErrorSupport("")
 
         if (!values.email.trim() || !/^\S+@\S+\.\S+$/.test(values.email)) {
             setValidationErrors("A valid email is required.");
             return;
         }
 
-        let validatePhone = values.phone.split("").map(Number)
-        if (validatePhone.length === 10) {
+        let validatePhone = /^\d{10}$/
+        if (!validatePhone.test(values.phone)) {
            setValidationErrors("A valid 10-digit phone number is required.");
            return;
         }
+
+        setValidationErrors("");
+
+        if(fileError.length > 0)
+        {
+            return;
+        }
+
         const formData = new FormData();
         formData.append("name", values.name);
         formData.append("email", values.email);
@@ -100,6 +113,7 @@ const AddForm = () => {
             <form style={{width: "500px"}} onSubmit={handleSubmit}>
                 <small className="text-danger">{errorSupport.length > 0 ? errorSupport : ""}</small>
                 <small className="text-danger">{validationErrors}</small>
+                <small className="text-danger">{fileError}</small>
                 <div className="form-group">
                     <label>Name</label>
                     <input name="name" value={values.name} type="text" className="form-control form-control-sm" onChange={handleChange} required/>
@@ -124,7 +138,7 @@ const AddForm = () => {
                 </div>
 
                 <div className="d-flex justify-content-between">
-                    <button className="btn btn-sm btn-success px-5">{validationErrors ? "": "Add"}</button>
+                    <button className="btn btn-sm btn-success px-5">Add</button>
                     <a className="btn btn-sm btn-dark px-2" href="/">Home</a>
                 </div>
 
